@@ -25,8 +25,8 @@ st.sidebar.markdown("# Home page \U0001F3E6")
 
 @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
 def load_models():
-    model_load = joblib.load("../Models/model.joblib")
-    best_thresh = joblib.load("../Models/best_thresh_LightGBM_NS.joblib")
+    model_load = joblib.load("model.joblib")
+    best_thresh = joblib.load("best_thresh_LightGBM_NS.joblib")
     st.info("model loaded")
     return model_load, best_thresh
 
@@ -35,13 +35,13 @@ model_load, best_thresh = load_models()
 
 @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
 def load_data():
-    X_test = joblib.load("../Models/X_test.pkl")
-    y_test = joblib.load("../Models/y_test.pkl")
-    y_pred = joblib.load("../Models/y_pred.pkl")
-    explainer = joblib.load("../Models/explainer")
-    shap_values = joblib.load("../Models/shap_values.pkl")
-    shap_values1 = joblib.load("../Models/shap_values1.pkl")
-    expected_value = joblib.load("../Models/expected_values.pkl")
+    X_test = joblib.load("X_test.pkl")
+    y_test = joblib.load("y_test.pkl")
+    y_pred = joblib.load("y_pred.pkl")
+    explainer = joblib.load("explainer")
+    shap_values = joblib.load("shap_values.pkl")
+    shap_values1 = joblib.load("shap_values1.pkl")
+    expected_value = joblib.load("expected_values.pkl")
     st.info("data loaded")
     return X_test, y_test, y_pred, explainer, shap_values, shap_values1, expected_value
 
