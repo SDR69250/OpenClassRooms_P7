@@ -1,4 +1,11 @@
+#### GATHERING THE DATA ####
+
+# imports
+from email import contentmanager
 from pyexpat import model
+from urllib import response
+from matplotlib.font_manager import json_load
+from regex import BESTMATCH
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -8,6 +15,7 @@ import plotly.graph_objects as go
 from zipfile import ZipFile
 import joblib
 import json
+import requests
 
 
 # Preprocessing, Imputing, Upsampling, Model Selection, Model Evaluation
@@ -16,102 +24,121 @@ from sklearn.impute import SimpleImputer
 from imblearn.pipeline import Pipeline as imbpipeline
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import warnings
+
+from visions import URL
+from yaml import load
 warnings.filterwarnings("ignore")
 import shap
 import streamlit.components.v1 as components
 
+
+# URL parent du serveur Flask
+FLASK_URL = "http://127.0.0.1:5000/"
+
+# page title (page and sidebar)
 st.markdown("# Home page \U0001F3E6")
 st.sidebar.markdown("# Home page \U0001F3E6")
 
-@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
-def load_models():
-    model_load = joblib.load("model.joblib")
-    best_thresh = joblib.load("best_thresh_LightGBM_NS.joblib")
-    st.info("model loaded")
-    return model_load, best_thresh
-
-model_load, best_thresh = load_models()
-
-
+# API calls | GET data (used to select customer idx)
 @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
 def load_data():
-    X_test = joblib.load("X_test.pkl")
-    y_test = joblib.load("y_test.pkl")
-    y_pred = joblib.load("y_pred.pkl")
-    explainer = joblib.load("explainer")
-    shap_values = joblib.load("shap_values.pkl")
-    shap_values1 = joblib.load("shap_values1.pkl")
-    expected_value = joblib.load("expected_values.pkl")
-    st.info("data loaded")
-    return X_test, y_test, y_pred, explainer, shap_values, shap_values1, expected_value
+    url_data = FLASK_URL + "load_data/"
+    response = requests.get(url_data)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_data = content["data"]
+    data = pd.DataFrame.from_dict(eval(dict_data), orient='columns')
+    return data
+data = load_data()
 
-X_test, y_test, y_pred, explainer, shap_values, shap_values1, expected_value = load_data()
-
-# feature names
-columns = shap_values.feature_names
-# data
-data = pd.DataFrame(y_test, index=y_test.index).reset_index()
-data["PRED"] = y_pred
-
-
-# Select Customer number SK_ID_CURR in original X_test file
-# idx = st.sidebar.multiselect(
-#     "Select Credit File", 
-#     options= data.SK_ID_CURR.values,
-#     default=[416652]
-# )[0]
+# Select Customer number SK_ID_CURR in data
 idx = st.sidebar.selectbox(
     "Select Credit File", 
-    data.SK_ID_CURR)
-
-# Initialization
+    data.SK_ID_CURR, key ="idx")
+# Initialization of idx
 if 'idx' not in st.session_state:
     st.session_state['idx'] = idx
 
-# Customer index in the corresponding array
-data_idx = data.loc[data["SK_ID_CURR"]==idx].index[0]
-# Customer data based on customer index in final X_test array
-ID_to_predict = pd.DataFrame(X_test.iloc[data_idx,:]).T
-# on réalise la prédiction de ID_to_predict avec le modèle 
-prediction = sum((model_load.predict_proba(ID_to_predict)[:, 1]>best_thresh)*1)
-prob_predict = float(model_load.predict_proba(ID_to_predict)[:, 1])
-
-# Compute feature importance
-# compute mean of absolute values for shap values
-vals = np.abs(shap_values1).mean(0)
-# compute feature importance as a dataframe containing vals
-feature_importance = pd.DataFrame(list(zip(columns, vals)),\
-    columns=['col_name','feature_importance_vals'])
-# Define top 10 features for customer details
-top_10 = feature_importance.sort_values(by='feature_importance_vals', ascending=False)[0:10].col_name.tolist()
-# Define top 20 features for comparison vs group
-top_20 = feature_importance.sort_values(by='feature_importance_vals', ascending=False)[0:20].col_name.tolist()
-feat_tot = feature_importance.feature_importance_vals.sum()
-feat_top = feature_importance.loc[feature_importance['col_name'].isin(top_20)].feature_importance_vals.sum()
 
 
-# session state backup
-st.session_state['model_load'] = model_load
-st.session_state['best_thresh'] = best_thresh
-st.session_state['X_test'] = X_test
-st.session_state['y_test'] = y_test
-st.session_state['y_pred'] = y_pred
-st.session_state['explainer'] = explainer
-st.session_state['shap_values'] = shap_values
-st.session_state['shap_values1'] = shap_values1
-st.session_state['expected_value'] = expected_value
-st.session_state['columns'] = columns
-st.session_state['data'] = data
-st.session_state['feature_importance'] = feature_importance
-st.session_state['top_10'] = top_10
-st.session_state['top_20'] = top_20
-st.session_state['ID_to_predict'] = ID_to_predict
-st.session_state['prob_predict'] = prob_predict
-st.session_state['feat_tot'] = feat_tot
-st.session_state['feat_top'] = feat_top
-st.session_state['data_idx'] = data_idx
+# GET predict : prediction / prob_predict / ID_to_predict : 
+url_predict_client = FLASK_URL + "predict/" + str(idx)
+# url_predict_client = 'http://127.0.0.1:5000/predict/309296'
+response = requests.get(url_predict_client)
+content = json.loads(response.content.decode('utf-8'))
+prediction = content["prediction"]
+prob_predict = content["prob_predict"]
+dict_ID_to_predict = content["ID_to_predict"]
+ID_to_predict = pd.DataFrame.from_dict(eval(dict_ID_to_predict), orient='columns')
+
+# GET top_10
+url_top_10 = FLASK_URL + "load_top_10/"
+response = requests.get(url_top_10)
+content = json.loads(response.content.decode('utf-8'))
+top_10 = content["top_10"]
+
+# GET best_thresh
+url_best_thresh = FLASK_URL + "load_best_thresh/"
+response = requests.get(url_best_thresh)
+content = json.loads(response.content.decode('utf-8'))
+best_thresh = content["best_thresh"]
+
+# GET X_test and cache it (heavy)
+@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def load_X_test():
+    url_X_test = FLASK_URL + "load_X_test/"
+    response = requests.get(url_X_test)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_X_test = content["X_test"]
+    X_test = pd.DataFrame.from_dict(eval(dict_X_test), orient='columns')
+    return X_test
+X_test = load_X_test()
 
 
+# # GET shap_values and cache it (heavy)
+# @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+# def load_shap_values():
+#     url_shap_values = FLASK_URL + "load_shap_values/"
+#     response = requests.get(url_shap_values)
+#     content = json.loads(response.content.decode('utf-8'))
+#     dict_shap_values = content["shap_values"]
+#     shap_values = pd.DataFrame.from_dict(eval(dict_shap_values), orient='columns')
+#     return shap_values
+# shap_values = load_shap_values()
+
+
+# # GET shap_values1 and cache it (heavy)
+# @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+# def load_shap_values1():
+#     url_shap_values1 = FLASK_URL + "load_shap_values1/"
+#     response = requests.get(url_shap_values1)
+#     content = json.loads(response.content.decode('utf-8'))
+#     dict_shap_values1 = content["shap_values1"]
+#     shap_values1 = pd.DataFrame.from_dict(eval(dict_shap_values1), orient='columns')
+#     return shap_values1
+# shap_values1 = load_shap_values1()
+
+
+#### INTERACTIONS IN THE STREAMLIT SESSION ####
+
+# warning message asking to select an action
+def customer():
+    customer_txt1 = f"""customer number : {str(idx)}\n
+    Please select an action on the sidebar.
+    """
+    customer_txt2 = f"customer number : {str(idx)}"
+
+    # checkbox to display customer txt 1 or 2:
+    check1 = st.sidebar.checkbox('Show Customer Jauge', key = "check_1")
+    check2 = st.sidebar.checkbox('Show Customer Details Top 10', key = "check_2")
+    check = check1 + check2   
+    if check == 0:
+        return check1, check2, st.write(customer_txt1)
+    else:
+        return check1, check2, st.write(customer_txt2)
+
+check1, check2, text = customer()
+
+# displays a jauge with credit analysis result for selected customer
 # @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
 def jauge():
     if prob_predict < best_thresh:
@@ -147,8 +174,8 @@ def jauge():
 
     st.write(fig2)
 
-# with right_column:
-if st.sidebar.checkbox('Show Customer Jauge'):
+# checkbox to display jauge:
+if check1:
     jauge()
 
 
@@ -196,8 +223,9 @@ def customer_details():
 
     st.write(fig1)
 
-# with left_column:
-if st.sidebar.checkbox('Show Customer Details Top 10'):
+# checkbox to display Top 10:
+if check2:
     customer_details()
 
 
+# st.write(st.session_state)

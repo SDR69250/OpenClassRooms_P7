@@ -1,52 +1,68 @@
-from pyexpat import model
+# ======================== | Imports | ========================
+
+#### GATHERING THE DATA ####
+
+# imports
+from email.policy import default
 import streamlit as st
-import pandas as pd
-import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import plotly.graph_objects as go
-from zipfile import ZipFile
-import joblib
 import json
+import requests
 
-
-# Preprocessing, Imputing, Upsampling, Model Selection, Model Evaluation
-import sklearn
-from sklearn.impute import SimpleImputer
-from imblearn.pipeline import Pipeline as imbpipeline
-from sklearn.model_selection import train_test_split, StratifiedKFold
-import warnings
-warnings.filterwarnings("ignore")
-import shap
-import streamlit.components.v1 as components
+# ======================== | Page title & sidebar | ========================
 
 st.markdown("# Customer details top 20 \U0001F50E")
 st.sidebar.markdown("Customer details top 20 \U0001F50E")
 
-# left_column, right_column = st.columns(2)
+# Imports data from Home page
+from Home import FLASK_URL, X_test
+
+# ======================== | Interactions, API calls and decode | ========================
+
+# API calls | GET data (used to select customer idx)
+@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def load_data():
+    url_data = FLASK_URL + "load_data/"
+    response = requests.get(url_data)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_data = content["data"]
+    data = pd.DataFrame.from_dict(eval(dict_data), orient='columns')
+    return data
+data = load_data()
 
 
-# retrieve session state variables
-model_load = st.session_state['model_load']
-best_thresh = st.session_state['best_thresh']
-X_test = st.session_state['X_test']
-y_test = st.session_state['y_test']
-y_pred = st.session_state['y_pred']
-explainer = st.session_state['explainer']
-shap_values = st.session_state['shap_values']
-shap_values1 = st.session_state['shap_values1']
-expected_value = st.session_state['expected_value']
-columns = st.session_state['columns']
-data = st.session_state['data']
+# Select Customer number SK_ID_CURR in data
+idx = st.sidebar.selectbox(
+    "Select Credit File", 
+    data.SK_ID_CURR, key = "idx2")
+
+# retrieve previously selected value from Home page
 idx = st.session_state['idx']
-feature_importance = st.session_state['feature_importance']
-top_10 = st.session_state['top_10']
-top_20 = st.session_state['top_20']
-ID_to_predict = st.session_state['ID_to_predict']
-prob_predict = st.session_state['prob_predict']
+st.write(idx)
 
+# GET predict : prediction / prob_predict / ID_to_predict : 
+url_predict_client = FLASK_URL + "predict/" + str(idx)
+response = requests.get(url_predict_client)
+content = json.loads(response.content.decode('utf-8'))
+dict_ID_to_predict = content["ID_to_predict"]
+ID_to_predict = pd.DataFrame.from_dict(eval(dict_ID_to_predict), orient='columns')
 
-# @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+# API calls | GET top_20
+url_top_20 = FLASK_URL + "load_top_20/"
+response = requests.get(url_top_20)
+content = json.loads(response.content.decode('utf-8'))
+top_20 = content["top_20"]
+
+#### INTERACTIONS IN THE STREAMLIT SESSION ####
+
+# table with top 20 features of selected customer
+st.write(f"customer number : {str(idx)}\n")
+st.write(ID_to_predict)
+
+# clean dataviz for top 20 features of selected customer 
 def customer_details():
     # utiliser graph objects avec une boucle sur top_20
     # pour montrer uniquement des données chiffrées
@@ -56,7 +72,6 @@ def customer_details():
 
     for i, c in enumerate(sel,1):
         chaine = "Val / Var Mean :<br>" + c
-
         if ((i == 1) | (i == 2)):
             row = 0
             column = 1 - i%2
@@ -66,7 +81,6 @@ def customer_details():
         else:
             row = int((i-1)/2)
             column = 1
-        
         fig1.add_trace(go.Indicator(
             mode = "number+delta",
             value = ID_to_predict[c].iloc[0],
@@ -76,21 +90,16 @@ def customer_details():
                     'decreasing': {'color': 'red'}},
             title = chaine,
             domain = {'row': row, 'column': column}))
-
     fig1.update_layout(
         grid = {'rows': 10, 'columns': 2, 'pattern': "independent", 'xgap' : 0.5, 'ygap' : 0.6})
-
     fig1.update_layout(
         autosize=False,
         width=800,
         height=1400,)
-
     plt.tight_layout()
 
     st.write(fig1)
 
-# with left_column:
-if st.sidebar.checkbox('Show Customer Details'):
-    customer_details()
+customer_details()
 
 

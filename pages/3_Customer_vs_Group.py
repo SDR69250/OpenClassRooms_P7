@@ -1,55 +1,84 @@
-from pyexpat import model
+# ======================== | Imports | ========================
+
 import streamlit as st
 import pandas as pd
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from zipfile import ZipFile
-import joblib
+# import plotly.graph_objects as go
 import json
-
-
-# Preprocessing, Imputing, Upsampling, Model Selection, Model Evaluation
-import sklearn
-from sklearn.impute import SimpleImputer
-from imblearn.pipeline import Pipeline as imbpipeline
-from sklearn.model_selection import train_test_split, StratifiedKFold
+import requests # for get requests on url
 import warnings
 warnings.filterwarnings("ignore")
 import shap
-import streamlit.components.v1 as components
+import streamlit.components.v1 as components # to visualize shap plots
+
+# Imports from Home page
+from Home import X_test, FLASK_URL
+
+
+# ======================== | Initializations | ========================
+
+# initialize variable viz for use in selection menu
+viz = ""
+
+
+# ======================== | Page title & sidebar | ========================
 
 st.markdown("# Customer vs Group \U00002696")
 st.sidebar.markdown("# Customer vs Group \U00002696")
 
 
-
-# retrieve session state variables
-model_load = st.session_state['model_load']
-best_thresh = st.session_state['best_thresh']
-X_test = st.session_state['X_test']
-y_test = st.session_state['y_test']
-y_pred = st.session_state['y_pred']
-explainer = st.session_state['explainer']
-shap_values = st.session_state['shap_values']
-shap_values1 = st.session_state['shap_values1']
-expected_value = st.session_state['expected_value']
-columns = st.session_state['columns']
-data = st.session_state['data']
-idx = st.session_state['idx']
-feature_importance = st.session_state['feature_importance']
-top_10 = st.session_state['top_10']
-top_20 = st.session_state['top_20']
-ID_to_predict = st.session_state['ID_to_predict']
-prob_predict = st.session_state['prob_predict']
-feat_tot = st.session_state['feat_tot']
-feat_top = st.session_state['feat_top']
-data_idx = st.session_state['data_idx']
-viz = ""
+# ======================== | Interactions, API calls and decode | ========================
 
 
-# fig = plt.figure(figsize = (10, 20))
+#### API CALLS ####
+
+# API call | GET data (used to select customer idx)
+@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def load_data():
+    url_data = FLASK_URL + "load_data/"
+    response = requests.get(url_data)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_data = content["data"]
+    data = pd.DataFrame.from_dict(eval(dict_data), orient='columns')
+    return data
+data = load_data()
+
+# Select Customer number SK_ID_CURR in data
+idx = st.sidebar.selectbox(
+    "Select Credit File", 
+    data.SK_ID_CURR, key = "idx3")
+
+# retrieve previously selected value from Home page
+if 'idx' in st.session_state:
+    idx = st.session_state['idx']
+
+# API call | GET top_20
+url_top_20 = FLASK_URL + "load_top_20/"
+response = requests.get(url_top_20)
+content = json.loads(response.content.decode('utf-8'))
+top_20 = content["top_20"]
+feat_top = content["feat_top"]
+feat_tot = content["feat_tot"]
+
+# API call | GET data for shap plots : type / index / shap_values :
+url_cust_vs_group = FLASK_URL + "cust_vs_group/" + str(idx)
+response = requests.get(url_cust_vs_group)
+content = json.loads(response.content.decode('utf-8'))
+base_value = content["base_value"]
+shap_values1_idx = np.array(content["shap_values1_idx"])
+dict_ID_to_predict = content["ID_to_predict"]
+ID_to_predict = pd.DataFrame.from_dict(eval(dict_ID_to_predict), orient='columns')
+
+# API call | GET expected_to_predicted waterfall plot : figure
+url_expected_to_predicted = FLASK_URL + "expected_to_predicted/" + str(idx) 
+
+
+# ======================== | Interactions Streamlit & Plots | ========================
+
+# recall customer number
+st.write(f"Customer number : {str(idx)}")
 
 def st_shap(plot, height=None):
     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
@@ -57,38 +86,38 @@ def st_shap(plot, height=None):
 
 if st.sidebar.checkbox('Show Feature Importance Analysis'):
     # Select type of feature explanation visualization
-    viz = st.sidebar.selectbox("Select feature importance visualization", options=['feature importance', 'expected to predicted', 'feature impact', 'odds of default', 'probability of default'])
+    viz = st.sidebar.selectbox("Select feature importance visualization", options=['probability of default', 'odds of default', 'feature importance', 'expected to predicted', 'feature impact'])
+else : st.write(f"""To visualise feature importance for customer {str(idx)}\n
+    Please select "Select Feature importance visualization" on the sidebar.
+    """)
 
-    # @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
-    def sample_feature_importance(idx, type=viz):
+# recall customer data
+st.write(ID_to_predict)
 
-        fig1 = plt.figure()
-        if type=='odds of default':
-            st_shap(shap.force_plot(shap_values.base_values[idx], shap_values1[idx, :], X_test.iloc[idx, :]))
-        elif type=='expected to predicted':
-            shap.waterfall_plot(shap_values[idx], max_display=10)
-            st.pyplot(fig1)    
-        elif type=='feature impact':
-            shap.summary_plot(shap_values, X_test, max_display=10)
-            st.pyplot(fig1)
-        elif type=='feature importance':
-            shap.summary_plot(shap_values, X_test, plot_type="bar", feature_names=columns)
-            st.pyplot(fig1)
-        elif type=='probability of default':
-            st_shap(shap.force_plot(shap_values.base_values[idx], shap_values1[idx, :], X_test.iloc[idx, :], link='logit')) # choose between 'logit' or 'identity'
-        else:
-            return "Return valid visual ('feature importance', 'expected to predicted', 'feature impact', 'odds of default', 'probability of default')"
+# @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def sample_feature_importance(idx, viz):
 
-
-    sample_feature_importance(data_idx)
-
-
+    fig1 = plt.figure()
+    if viz=='probability of default':
+        return st.write(st_shap(shap.force_plot(base_value, shap_values1_idx, ID_to_predict, link='logit'))) # choose between 'logit' or 'identity'
+    elif viz=='odds of default':
+        return st.write(st_shap(shap.force_plot(base_value, shap_values1_idx, ID_to_predict)))
+    # elif type=='expected to predicted':
+    #     shap.waterfall_plot(shap_values[idx], max_display=10)
+    #     return st.pyplot(fig1)    
+    # # elif type=='feature impact':
+    #     shap.summary_plot(shap_values, X_test, max_display=10)
+    #     st.pyplot(fig1)
+    # elif type=='feature importance':
+    #     shap.summary_plot(shap_values, X_test, plot_type="bar", feature_names=columns)
+    #     st.pyplot(fig1)
+sample_feature_importance(idx, viz)
 
 
 if st.sidebar.checkbox('Show Observation vs Group'):
     # @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
     def obs_vs_group():
-        print('les 20 premières features représentent', round((feat_top/feat_tot)*100, 2),'% de l\'importance de toutes les features.')
+        st.write(f'les 20 premières features représentent {round((feat_top/feat_tot)*100, 2)} % de l\'importance de toutes les features.')
 
         # Show boxplot for each feature with original units
         # selection of 20 most explicative features
@@ -123,3 +152,6 @@ if st.sidebar.checkbox('Show Observation vs Group'):
         st.pyplot(fig2)
 
     obs_vs_group()
+else : st.write(f"""To visualize customer {str(idx)} vs Group :\n
+    Please select "Show Observation vs Group" on the sidebar.
+    """)
