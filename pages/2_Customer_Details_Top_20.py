@@ -18,7 +18,12 @@ st.markdown("# Customer details top 20 \U0001F50E")
 st.sidebar.markdown("Customer details top 20 \U0001F50E")
 
 # Imports data from Home page
-from Home import FLASK_URL, X_test
+# from Home import FLASK_URL, X_test
+
+# URL parent du serveur Flask
+# FLASK_URL = "http://127.0.0.1:5000/"
+# URL parent du serveur Flask - Pythonanywhere
+FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
 
 # ======================== | Interactions, API calls and decode | ========================
 
@@ -32,6 +37,18 @@ def load_data():
     data = pd.DataFrame.from_dict(eval(dict_data), orient='columns')
     return data
 data = load_data()
+
+
+# GET X_test and cache it (heavy)
+@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def load_X_test():
+    url_X_test = FLASK_URL + "load_X_test/"
+    response = requests.get(url_X_test)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_X_test = content["X_test"]
+    X_test = pd.DataFrame.from_dict(eval(dict_X_test), orient='columns')
+    return X_test
+X_test = load_X_test()
 
 
 # Select Customer number SK_ID_CURR in data

@@ -14,8 +14,12 @@ import shap
 import streamlit.components.v1 as components # to visualize shap plots
 
 # Imports from Home page
-from Home import X_test, FLASK_URL
+# from Home import X_test, FLASK_URL
 
+# URL parent du serveur Flask
+# FLASK_URL = "http://127.0.0.1:5000/"
+# URL parent du serveur Flask - Pythonanywhere
+FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
 
 # ======================== | Initializations | ========================
 
@@ -33,6 +37,17 @@ st.sidebar.markdown("# Customer vs Group \U00002696")
 
 
 #### API CALLS ####
+
+# GET X_test and cache it (heavy)
+@st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
+def load_X_test():
+    url_X_test = FLASK_URL + "load_X_test/"
+    response = requests.get(url_X_test)
+    content = json.loads(response.content.decode('utf-8'))
+    dict_X_test = content["X_test"]
+    X_test = pd.DataFrame.from_dict(eval(dict_X_test), orient='columns')
+    return X_test
+X_test = load_X_test()
 
 # API call | GET data (used to select customer idx)
 @st.cache(allow_output_mutation=True, show_spinner=True, suppress_st_warning=True)
