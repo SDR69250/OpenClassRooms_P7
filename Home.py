@@ -32,7 +32,9 @@ import streamlit.components.v1 as components
 
 
 # URL parent du serveur Flask
-FLASK_URL = "http://127.0.0.1:5000/"
+# FLASK_URL = "http://127.0.0.1:5000/"
+# URL parent du serveur Flask - Pythonanywhere
+FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
 
 # page title (page and sidebar)
 st.markdown("# Home page \U0001F3E6")

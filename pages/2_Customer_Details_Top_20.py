@@ -40,8 +40,9 @@ idx = st.sidebar.selectbox(
     data.SK_ID_CURR, key = "idx2")
 
 # retrieve previously selected value from Home page
-idx = st.session_state['idx']
-st.write(idx)
+if 'idx' in st.session_state:
+    idx = st.session_state['idx']
+# st.write(idx)
 
 # GET predict : prediction / prob_predict / ID_to_predict : 
 url_predict_client = FLASK_URL + "predict/" + str(idx)

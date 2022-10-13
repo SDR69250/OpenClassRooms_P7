@@ -14,9 +14,10 @@ import pickle
 
 
 app = Flask(__name__)
+# basepath = os.path.abspath("./OPC_P7/OpenClassRooms_P7/")
 
 # load models, threshold, data and explainer
-model_load = joblib.load("model.joblib")
+model_load = joblib.load("model.joblib") # sur PA pour chaque fichier remplacer le premier " par "basepath + "/
 best_thresh = joblib.load("best_thresh_LightGBM_NS.joblib")
 X_test = joblib.load("X_test.pkl")
 y_test = joblib.load("y_test.pkl")
@@ -52,7 +53,7 @@ def hello_world():
 @app.route("/predict/<int:Client_Id>")
 def predict(Client_Id: int):
     # Customer index in the corresponding array
-    data_idx = data.loc[data["SK_ID_CURR"]==Client_Id].index[0]
+    data_idx = data.loc[data["SK_ID_CURR"]==int(Client_Id)].index[0]
     # Customer data based on customer index in final X_test array
     ID_to_predict = pd.DataFrame(X_test.iloc[data_idx,:]).T  
     # on réalise la prédiction de ID_to_predict avec le modèle 
@@ -62,32 +63,25 @@ def predict(Client_Id: int):
     return json.dumps({"prediction" : int(prediction), "prob_predict": prob_predict, "ID_to_predict" : ID_to_predict.to_json(orient='columns')})
 
     
-@app.route('/load_top_10/', methods=['GET'])
+@app.route("/load_top_10/", methods=['GET'])
 def load_top_10():
     return json.dumps({"top_10" : top_10})
 
-@app.route('/load_top_20/', methods=['GET'])
+@app.route("/load_top_20/", methods=['GET'])
 def load_top_20():
     return json.dumps({"top_20" : top_20, 'feat_tot': feat_tot, 'feat_top': feat_top})
 
-@app.route('/load_best_thresh/', methods=['GET'])
+@app.route("/load_best_thresh/", methods=['GET'])
 def load_best_thresh():
     return {"best_thresh" : best_thresh} 
 
-@app.route('/load_X_test/', methods=['GET'])
+@app.route("/load_X_test/", methods=['GET'])
 def load_X_test():
     return {"X_test" : pd.DataFrame(X_test).to_json(orient='columns')} 
 
-@app.route('/load_data/', methods=['GET'])
+@app.route("/load_data/", methods=['GET'])
 def load_data():
     return {"data" : pd.DataFrame(data).to_json(orient='columns')} 
-
-
-def st_shap(plot, height=None):
-    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
-    components.html(shap_html, height=height)
-
-
 
 
 # provide dataviz for shap features importance on selected customer's credit decision 
@@ -102,13 +96,17 @@ def cust_vs_group(Client_Id: int):
     "ID_to_predict": ID_to_predict.to_json(orient='columns')})
 
 
-# provide dataviz for shap features importance on selected customer's credit decision 
-@app.route("/expected_to_predicted/<int:Client_Id>")
-def expected_to_predicted(Client_Id: int):
-    # fig1 = plt.figure()
-    data_idx = data.loc[data["SK_ID_CURR"]==int(Client_Id)].index[0] 
-    shap.waterfall_plot(shap_values[data_idx], max_display=10, show=False).savefig("/templates/waterfall.png")
-    return render_template('/templates/waterfall.png')
+# def st_shap(plot, height=None):
+#     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+#     components.html(shap_html, height=height)
+
+# # provide dataviz for shap features importance on selected customer's credit decision 
+# @app.route("/expected_to_predicted/<int:Client_Id>")
+# def expected_to_predicted(Client_Id: int):
+#     # fig1 = plt.figure()
+#     data_idx = data.loc[data["SK_ID_CURR"]==int(Client_Id)].index[0] 
+#     shap.waterfall_plot(shap_values[data_idx], max_display=10, show=False).savefig("/templates/waterfall.png")
+#     return render_template('/templates/waterfall.png')
 
 
 
