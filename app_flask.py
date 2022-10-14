@@ -14,18 +14,18 @@ import os
 
 
 app = Flask(__name__)
-# basepath = os.path.abspath("./OPC_P7/OpenClassRooms_P7/")
+basepath = os.path.abspath("./OPC_P7/OpenClassRooms_P7/")
 
 # load models, threshold, data and explainer
-model_load = joblib.load("model.joblib") # sur PA pour chaque fichier remplacer le premier " par "basepath + "/
-best_thresh = joblib.load("best_thresh_LightGBM_NS.joblib")
-X_test = joblib.load("X_test.pkl")
-y_test = joblib.load("y_test.pkl")
-y_pred = joblib.load("y_pred.pkl")
-explainer = joblib.load("explainer")
-shap_values = joblib.load("shap_values.pkl")
-shap_values1 = joblib.load("shap_values1.pkl")
-expected_value = joblib.load("expected_values.pkl")
+model_load = joblib.load(basepath + "/model.joblib")
+best_thresh = joblib.load(basepath + "/best_thresh_LightGBM_NS.joblib")
+X_test = joblib.load(basepath + "/X_test.pkl")
+y_test = joblib.load(basepath + "/y_test.pkl")
+y_pred = joblib.load(basepath + "/y_pred.pkl")
+explainer = joblib.load(basepath + "/explainer")
+shap_values = joblib.load(basepath + "/shap_values.pkl")
+shap_values1 = joblib.load(basepath + "/shap_values1.pkl")
+expected_value = joblib.load(basepath + "/expected_values.pkl")
 columns = shap_values.feature_names
 data = pd.DataFrame(y_test, index=y_test.index).reset_index()
 data["PRED"] = y_pred
@@ -66,7 +66,24 @@ def predict(Client_Id: int):
     # on renvoie la prédiction
     return json.dumps({"decision" : decision, "prediction" : int(prediction), "prob_predict": prob_predict, "ID_to_predict" : ID_to_predict.to_json(orient='columns')})
 
-    
+# provide data for shap features importance on selected customer's credit decision 
+@app.route("/cust_vs_group/<int:Client_Id>")
+def cust_vs_group(Client_Id: int):
+    # utiliser idx pour former le graph via Flask et l'importer dans streamlit
+    data_idx = data.loc[data["SK_ID_CURR"]==int(Client_Id)].index[0] #string ou pas
+    # customer data based on customer index in final X_test array
+    ID_to_predict = pd.DataFrame(X_test.iloc[data_idx,:]).T
+    # on réalise la prédiction de ID_to_predict avec le modèle 
+    prediction = sum((model_load.predict_proba(ID_to_predict)[:, 1]>best_thresh)*1)
+    if prediction == 0:
+        decision = "granted"
+    else :
+        decision = "not granted"
+    # return json string
+    return json.dumps({'decision' : decision, 'base_value': shap_values.base_values[data_idx], 'shap_values1_idx': shap_values1[data_idx, :].tolist(), \
+    "ID_to_predict": ID_to_predict.to_json(orient='columns')})
+
+
 @app.route("/load_top_10/", methods=['GET'])
 def load_top_10():
     return json.dumps({"top_10" : top_10})
@@ -86,25 +103,6 @@ def load_X_test():
 @app.route("/load_data/", methods=['GET'])
 def load_data():
     return {"data" : pd.DataFrame(data).to_json(orient='columns')} 
-
-
-# provide dataviz for shap features importance on selected customer's credit decision 
-@app.route("/cust_vs_group/<int:Client_Id>")
-def cust_vs_group(Client_Id: int):
-    # utiliser idx pour former le graph via Flask et l'importer dans streamlit
-    data_idx = data.loc[data["SK_ID_CURR"]==int(Client_Id)].index[0] #string ou pas
-    # customer data based on customer index in final X_test array
-    ID_to_predict = pd.DataFrame(X_test.iloc[data_idx,:]).T
-    # on réalise la prédiction de ID_to_predict avec le modèle 
-    prediction = sum((model_load.predict_proba(ID_to_predict)[:, 1]>best_thresh)*1)
-    if prediction == 0:
-        decision = "granted"
-    else :
-        decision = "not granted"
-    # return json string
-    return json.dumps({'decision' : decision, 'base_value': shap_values.base_values[data_idx], 'shap_values1_idx': shap_values1[data_idx, :].tolist(), \
-    "ID_to_predict": ID_to_predict.to_json(orient='columns')})
-
 
 
 if __name__ == "__main__":

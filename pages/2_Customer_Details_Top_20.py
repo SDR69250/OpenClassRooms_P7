@@ -11,10 +11,10 @@ import requests
 # Imports data from Home page
 # from Home import FLASK_URL, X_test
 
-# URL parent du serveur Flask
-FLASK_URL = "http://127.0.0.1:5000/"
+# # URL parent du serveur Flask
+# FLASK_URL = "http://127.0.0.1:5000/"
 # URL parent du serveur Flask - Pythonanywhere
-# FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
+FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
 
 # ======================== | Page title & sidebar | ========================
 
@@ -65,10 +65,6 @@ else:
 st.session_state['idx'] = idx1
 idx = idx1
 
-
-# # Save selected value in Session State
-# if 'idx' not in st.session_state:
-#     st.session_state['idx'] = idx
 
 # API call | GET predict : prediction / prob_predict / ID_to_predict : 
 url_predict_client = FLASK_URL + "predict/" + str(idx)
@@ -124,5 +120,3 @@ def customer_details():
     st.write(fig1)
 
 customer_details()
-
-
