@@ -109,6 +109,7 @@ ID_to_predict = pd.DataFrame.from_dict(eval(dict_ID_to_predict), orient='columns
 
 # recall customer number
 st.write(f"Customer number : {str(idx)} | Credit is " + decision)
+st.write("Code_Gender : 1 = Female | 0 = Male")
 # recall customer data
 st.write(ID_to_predict)
 

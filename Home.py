@@ -106,7 +106,9 @@ X_test = load_X_test()
 #### INTERACTIONS IN THE STREAMLIT SESSION ####
 
 st.write(f"Customer number : {str(idx)}\n | Credit is " + decision)
+st.write("Code_Gender : 1 = Female | 0 = Male")
 st.write(ID_to_predict)
+
 
 # warning message asking to select an action
 def customer():

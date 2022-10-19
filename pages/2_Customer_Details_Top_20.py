@@ -76,6 +76,7 @@ ID_to_predict = pd.DataFrame.from_dict(eval(dict_ID_to_predict), orient='columns
 
 # table with top 20 features of selected customer
 st.write(f"Customer number : {str(idx)}\n | Credit is " + decision)
+st.write("Code_Gender : 1 = Female | 0 = Male")
 st.write(ID_to_predict)
 
 
