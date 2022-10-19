@@ -1,6 +1,7 @@
 Flask==2.2.2
 imbalanced_learn==0.9.1
 imblearn==0.0
+lightgbm==3.3.2
 joblib==1.1.0
 matplotlib==3.5.2
 numpy==1.23.1

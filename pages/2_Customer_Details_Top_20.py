@@ -12,9 +12,7 @@ import requests
 # from Home import FLASK_URL, X_test
 
 # # URL parent du serveur Flask
-# FLASK_URL = "http://127.0.0.1:5000/"
-# URL parent du serveur Flask - Pythonanywhere
-FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
+FLASK_URL = "http://127.0.0.1:5000/"
 
 # ======================== | Page title & sidebar | ========================
 

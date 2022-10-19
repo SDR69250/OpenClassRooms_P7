@@ -14,18 +14,20 @@ import os
 
 
 app = Flask(__name__)
-basepath = os.path.abspath("./OPC_P7/OpenClassRooms_P7/")
+
+current_folder = os.getcwd()
+basepath = os.path.join(current_folder, "data")
 
 # load models, threshold, data and explainer
-model_load = joblib.load(basepath + "/model.joblib")
-best_thresh = joblib.load(basepath + "/best_thresh_LightGBM_NS.joblib")
-X_test = joblib.load(basepath + "/X_test.pkl")
-y_test = joblib.load(basepath + "/y_test.pkl")
-y_pred = joblib.load(basepath + "/y_pred.pkl")
-explainer = joblib.load(basepath + "/explainer")
-shap_values = joblib.load(basepath + "/shap_values.pkl")
-shap_values1 = joblib.load(basepath + "/shap_values1.pkl")
-expected_value = joblib.load(basepath + "/expected_values.pkl")
+model_load = joblib.load(os.path.join(basepath, "model.joblib"))
+best_thresh = joblib.load(os.path.join(basepath, "best_thresh_LightGBM_NS.joblib"))
+X_test = joblib.load(os.path.join(basepath, "X_test.pkl"))
+y_test = joblib.load(os.path.join(basepath, "y_test.pkl"))
+y_pred = joblib.load(os.path.join(basepath, "y_pred.pkl"))
+explainer = joblib.load(os.path.join(basepath, "explainer"))
+shap_values = joblib.load(os.path.join(basepath, "shap_values.pkl"))
+shap_values1 = joblib.load(os.path.join(basepath, "shap_values1.pkl"))
+expected_value = joblib.load(os.path.join(basepath, "expected_values.pkl"))
 columns = shap_values.feature_names
 data = pd.DataFrame(y_test, index=y_test.index).reset_index()
 data["PRED"] = y_pred

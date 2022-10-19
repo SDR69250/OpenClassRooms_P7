@@ -11,6 +11,7 @@ import json
 import requests # for get requests on url
 import warnings
 warnings.filterwarnings("ignore")
+import os
 import shap
 import streamlit.components.v1 as components # to visualize shap plots
 
@@ -18,16 +19,15 @@ import streamlit.components.v1 as components # to visualize shap plots
 # from Home import X_test, FLASK_URL
 
 # URL parent du serveur Flask
-# FLASK_URL = "http://127.0.0.1:5000/"
-# URL parent du serveur Flask - Pythonanywhere
-FLASK_URL = "https://sebastienderosa.eu.pythonanywhere.com/"
-
+FLASK_URL = "http://127.0.0.1:5000/"
 
 # ======================== | Data Import | ========================
 
-shap_values = joblib.load("shap_values.pkl")
+current_folder = os.getcwd()
+basepath = os.path.join(current_folder, "data")
+y_test = joblib.load(os.path.join(basepath, "y_test.pkl"))
+shap_values = joblib.load(os.path.join(basepath, "shap_values.pkl"))
 columns = shap_values.feature_names
-y_test = joblib.load("y_test.pkl")
 data = pd.DataFrame(y_test, index=y_test.index).reset_index()
 
 # ======================== | Initializations | ========================
