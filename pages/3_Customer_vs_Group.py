@@ -19,7 +19,7 @@ import streamlit.components.v1 as components # to visualize shap plots
 # from Home import X_test, FLASK_URL
 
 # URL parent du serveur Flask
-FLASK_URL = "http://127.0.0.1:5000/"
+FLASK_URL = "http://0.0.0.0:5000/"
 
 # ======================== | Data Import | ========================
 

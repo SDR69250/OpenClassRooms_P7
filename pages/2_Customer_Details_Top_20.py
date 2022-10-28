@@ -12,7 +12,7 @@ import requests
 # from Home import FLASK_URL, X_test
 
 # # URL parent du serveur Flask
-FLASK_URL = "http://127.0.0.1:5000/"
+FLASK_URL = "http://0.0.0.0:5000/"
 
 # ======================== | Page title & sidebar | ========================
 
