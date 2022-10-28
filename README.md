@@ -19,7 +19,8 @@ https://www.kaggle.com/c/home-credit-default-risk/data
 -  DeRosa_Sebastien_2_modelisation_082022.ipynb : notebook de modélisation, optimisation et sélection du meilleur modèle
 -  DeRosa_Sebastien_3_interpretation_db_082022.ipynb : notebook préparation de l’interprétation et de la visualisation des résultats du modèle
 2. Création d'un dashboard interactif : décision d'octroi de crédit
--  app_flask.py : code source de l’API Flask de mise à disposition des routes 
+-  app_flask.py : code source de l’API Flask de mise à disposition des routes
+-  Lien vers l’API Flask : http://15.188.141.153:5000/ 
 -  Home.py : code du dashboard avec Streamlit (2 autres onglets de l'appli sont stockés dans pages/)
 -  Lien vers le tableau de bord final : http://15.188.141.153:8501/
 3. Documentation du projet
